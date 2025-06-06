@@ -1,0 +1,19 @@
+
+> dev
+> node ./server.js
+
+Express server listening at http://localhost:3000
+🔌  New client connected
+↩️  received from client: Hello
+
+❌  Client disconnected
+🎶  VG connected to Mock‑EL
+🔌  New client connected
+❌  Client disconnected
+🎶  VG connected to Mock‑EL
+🔌  New client connected
+🎶  VG connected to Mock‑EL
+↩️  received from client: Hello from test client
+📨  received from Mock‑EL: {"type":"audio","audio_event":{"audio_base_64":"ZH
+❌  Client disconnected
+❌  Mock‑EL disconnected
