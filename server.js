@@ -67,10 +67,8 @@ app.all("*", remixHandler);
 // Create HTTP server
 const server = createServer(app);
 
-// Use real ElevenLabs if credentials are available
-const EL_ENDPOINT = process.env.ELEVENLABS_API_KEY && process.env.ELEVENLABS_AGENT_ID
-  ? `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${process.env.ELEVENLABS_AGENT_ID}`
-  : "ws://localhost:4001";
+// ElevenLabs WebSocket endpoint
+const ELEVENLABS_ENDPOINT = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${process.env.ELEVENLABS_AGENT_ID}`;
 
 /* ---------- Voice Gateway WS ( /ws/call ) ---------- */
 const wss = new WebSocketServer({ noServer: true });
@@ -82,33 +80,31 @@ wss.on("connection", (socket, request) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
   const callSid = url.searchParams.get('callSid') || `call_${Date.now()}`;
 
-  const elSocket = new WebSocket(EL_ENDPOINT, {
-    headers: process.env.ELEVENLABS_API_KEY ? {
+  const elevenLabsSocket = new WebSocket(ELEVENLABS_ENDPOINT, {
+    headers: {
       'xi-api-key': process.env.ELEVENLABS_API_KEY
-    } : {}
-  });
-
-  elSocket.on("open", () => {
-    console.log("🎶  VG connected to ElevenLabs");
-    
-    // Send conversation initialization for real ElevenLabs
-    if (process.env.ELEVENLABS_API_KEY) {
-      const initMessage = {
-        type: "conversation_initiation_client_data",
-        conversation_initiation_client_data: {
-          conversation_id: callSid,
-          custom_metadata: {
-            source: "twilio",
-            timestamp: new Date().toISOString()
-          }
-        }
-      };
-      elSocket.send(JSON.stringify(initMessage));
-      console.log("📤 Sent conversation init");
     }
   });
 
-  /* Twilio‑side → EL */
+  elevenLabsSocket.on("open", () => {
+    console.log("🎶  Voice Gateway connected to ElevenLabs");
+    
+    // Send conversation initialization
+    const initMessage = {
+      type: "conversation_initiation_client_data",
+      conversation_initiation_client_data: {
+        conversation_id: callSid,
+        custom_metadata: {
+          source: "twilio",
+          timestamp: new Date().toISOString()
+        }
+      }
+    };
+    elevenLabsSocket.send(JSON.stringify(initMessage));
+    console.log("📤 Sent conversation initialization to ElevenLabs");
+  });
+
+  /* Twilio → ElevenLabs */
   socket.on("message", chunk => {
     try {
       const data = JSON.parse(chunk.toString());
@@ -120,8 +116,8 @@ wss.on("connection", (socket, request) => {
           user_audio_chunk: data.media.payload // Already base64 μ-law from Twilio
         };
         
-        if (elSocket.readyState === 1) {
-          elSocket.send(JSON.stringify(audioMessage));
+        if (elevenLabsSocket.readyState === 1) {
+          elevenLabsSocket.send(JSON.stringify(audioMessage));
         }
       } else if (data.event === 'start') {
         console.log('📞 Call started:', data.start?.callSid);
@@ -131,8 +127,8 @@ wss.on("connection", (socket, request) => {
         }
       } else if (data.event === 'stop') {
         console.log('📞 Call ended');
-        if (elSocket.readyState === 1) {
-          elSocket.send(JSON.stringify({ type: 'close_socket' }));
+        if (elevenLabsSocket.readyState === 1) {
+          elevenLabsSocket.send(JSON.stringify({ type: 'close_socket' }));
         }
         // Log call end in Supabase
         if (callSid) {
@@ -140,41 +136,31 @@ wss.on("connection", (socket, request) => {
         }
       }
     } catch (err) {
-      // If not JSON, might be from mock client
-      console.log("↩️  received from client:", chunk.toString().slice(0, 50));
-      if (elSocket.readyState === 1) {
-        elSocket.send(chunk);
-      }
+      console.error("Error parsing Twilio message:", err);
     }
   });
 
-  /* EL → Twilio‑side */
-  elSocket.on("message", m => {
+  /* ElevenLabs → Twilio */
+  elevenLabsSocket.on("message", m => {
     try {
       const event = JSON.parse(m.toString());
-      console.log(`📨  EL Event: ${event.type}`);
+      console.log(`📨  ElevenLabs Event: ${event.type}`);
       
       switch(event.type) {
         case 'conversation_initiated':
-          console.log('✅ Conversation initiated');
+          console.log('✅ Conversation initiated with ElevenLabs');
           break;
           
         case 'audio_event':
           // Forward audio back to Twilio
           if (event.audio_event?.audio_base_64 && socket.readyState === 1) {
-            // For real Twilio, wrap in media event
-            if (process.env.ELEVENLABS_API_KEY) {
-              const twilioMessage = {
-                event: "media",
-                media: {
-                  payload: event.audio_event.audio_base_64
-                }
-              };
-              socket.send(JSON.stringify(twilioMessage));
-            } else {
-              // For mock client, send as-is
-              socket.send(m);
-            }
+            const twilioMessage = {
+              event: "media",
+              media: {
+                payload: event.audio_event.audio_base_64
+              }
+            };
+            socket.send(JSON.stringify(twilioMessage));
           }
           break;
           
@@ -196,7 +182,7 @@ wss.on("connection", (socket, request) => {
           
         case 'ping_event':
           // Respond with pong
-          elSocket.send(JSON.stringify({ type: 'pong_event' }));
+          elevenLabsSocket.send(JSON.stringify({ type: 'pong_event' }));
           break;
           
         case 'error_event':
@@ -209,18 +195,18 @@ wss.on("connection", (socket, request) => {
   });
 
   socket.on("close", () => {
-    console.log("❌  Client disconnected");
-    if (elSocket.readyState === 1) {
-      elSocket.close();
+    console.log("❌  Twilio client disconnected");
+    if (elevenLabsSocket.readyState === 1) {
+      elevenLabsSocket.close();
     }
   });
 
-  elSocket.on("close", () => {
-    console.log("❌  Mock‑EL disconnected");
+  elevenLabsSocket.on("close", () => {
+    console.log("❌  ElevenLabs disconnected");
   });
 
-  elSocket.on("error", (err) => {
-    console.error("❌  Mock‑EL error:", err.message);
+  elevenLabsSocket.on("error", (err) => {
+    console.error("❌  ElevenLabs error:", err.message);
   });
 });
 

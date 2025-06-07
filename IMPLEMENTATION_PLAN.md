@@ -6,45 +6,19 @@
 - Homebrew, Node.js 20.x LTS, Git, VS Code installed
 - All development tools ready
 
-### Phase 1-3: Basic WebSocket Relay ✅
+### Phase 1-4: Core Implementation ✅
 - Remix + Express app scaffolded
 - WebSocket server at `/ws/call`
-- Mock ElevenLabs server for testing
-- Bidirectional message relay working
+- Real ElevenLabs API integration
+- Bidirectional audio relay working
+- Supabase database integration
+- Environment configuration
+- Health check endpoint
 - Git repository initialized
 
 ## Remaining Implementation Phases
 
-### Phase 4: Health Check & Basic Monitoring
-**Goal**: Add operational endpoints for monitoring
-- [ ] Add `/healthz` endpoint returning "ok"
-- [ ] Add `/status` endpoint with connection counts
-- [ ] Add basic logging with timestamps
-- [ ] Test with curl/httpie
-
-### Phase 5: Environment Configuration
-**Goal**: Replace hardcoded values with environment variables
-- [ ] Create `.env.example` file
-- [ ] Add environment variables:
-  - `EL_ENDPOINT` (ElevenLabs WebSocket URL)
-  - `PORT` (server port, default 3000)
-  - `LOG_LEVEL` (debug/info/warn/error)
-- [ ] Update server.js to use dotenv
-- [ ] Update Mock EL connection URL to use env var
-
-### Phase 6: ElevenLabs Integration
-**Goal**: Connect to real ElevenLabs Conversational AI
-- [ ] Study ElevenLabs WebSocket API docs
-- [ ] Add authentication headers (xi-api-key)
-- [ ] Implement connection initialization JSON
-- [ ] Handle ElevenLabs-specific events:
-  - Connection acknowledgment
-  - Audio streaming events
-  - Error events
-  - Conversation metadata
-- [ ] Test with ElevenLabs sandbox/test account
-
-### Phase 7: Twilio Integration
+### Phase 5: Twilio Integration (Next Priority)
 **Goal**: Accept real Twilio Media Streams
 - [ ] Study Twilio Media Streams documentation
 - [ ] Add Twilio webhook endpoint (POST /voice)

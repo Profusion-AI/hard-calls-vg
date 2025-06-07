@@ -15,11 +15,9 @@ This is a WebSocket relay server that connects Twilio phone calls to ElevenLabs'
 - `npm run lint` - Run ESLint
 - `npm run typecheck` - Run TypeScript type checking
 
-### Mock ElevenLabs Server
-- `cd mock-el && node index.js` - Start the Mock ElevenLabs server on port 4001
-
 ### Testing WebSocket
-- `websocat ws://localhost:3000/ws/call` - Test WebSocket connection
+- `node test-elevenlabs.js` - Test ElevenLabs connection
+- `websocat ws://localhost:3000/ws/call` - Manual WebSocket testing
 - `brew install websocat` - Install websocat if not available
 
 ## Architecture
@@ -30,16 +28,18 @@ This is a WebSocket relay server that connects Twilio phone calls to ElevenLabs'
    - WebSocket server listening at `/ws/call`
    - Bidirectional relay between Twilio and ElevenLabs
 
-2. **Mock ElevenLabs Server** (`mock-el/index.js`):
-   - Simulates ElevenLabs WebSocket API on port 4001
-   - Returns dummy audio data for testing
+2. **ElevenLabs Integration**:
+   - Direct connection to ElevenLabs Conversational AI
+   - Uses agent ID: Configured via ELEVENLABS_AGENT_ID
+   - Handles all event types: audio, transcripts, errors
 
 ### WebSocket Flow
-1. Client connects to `ws://localhost:3000/ws/call`
-2. VG creates connection to ElevenLabs (currently Mock EL at `ws://localhost:4001`)
-3. Messages from client are forwarded to EL
-4. Responses from EL are forwarded back to client
-5. Connection cleanup on disconnect
+1. Twilio connects to `wss://your-domain/ws/call`
+2. VG creates connection to ElevenLabs API (`wss://api.elevenlabs.io`)
+3. Audio from Twilio is forwarded to ElevenLabs
+4. Agent responses are forwarded back to Twilio
+5. Transcripts and metadata logged to Supabase
+6. Graceful cleanup on disconnect
 
 ### Key Dependencies
 - `ws` - WebSocket implementation
@@ -49,13 +49,15 @@ This is a WebSocket relay server that connects Twilio phone calls to ElevenLabs'
 ## Implementation Status
 
 ### ✅ Completed
-- Phase 1: Basic WebSocket relay setup
-- Phase 2: Mock Twilio client capability (via websocat)
-- Phase 3: Bridging Mock Twilio ↔ Mock ElevenLabs
+- Phase 1-3: Basic WebSocket relay setup
+- Phase 4: Real ElevenLabs integration
+- Database integration with Supabase
+- Production-ready error handling
 
 ### 🚀 Next Steps
-- Phase 4: Real ElevenLabs integration
-- Phase 5: Real Twilio integration (requires public deployment)
+- Deploy to Fly.io for public WebSocket endpoint
+- Configure Twilio phone number with TwiML
+- Production testing with real phone calls
 
 ## Key Insight
 ElevenLabs supports `audio/x-mulaw @ 8000Hz` natively for Twilio integrations, eliminating the need for audio transcoding in the VG!
