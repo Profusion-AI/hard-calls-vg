@@ -54,12 +54,12 @@ if (viteDevServer) {
 // more aggressive with this caching.
 app.use(express.static("build/client", { maxAge: "1h" }));
 
-app.use(morgan("tiny"));
-
-// Health check endpoint
+// Health check endpoint (before morgan to avoid logging)
 app.get("/healthz", (req, res) => {
   res.status(200).send("ok");
 });
+
+app.use(morgan("tiny"));
 
 // handle SSR requests
 app.all("*", remixHandler);
@@ -183,6 +183,15 @@ wss.on("connection", (socket, request) => {
         case 'ping_event':
           // Respond with pong
           elevenLabsSocket.send(JSON.stringify({ type: 'pong_event' }));
+          break;
+          
+        case 'ping':
+          // Handle alternative ping format
+          elevenLabsSocket.send(JSON.stringify({ type: 'pong' }));
+          break;
+          
+        case 'conversation_initiation_metadata':
+          console.log('📋 Conversation metadata received');
           break;
           
         case 'error_event':
