@@ -122,6 +122,28 @@ SUPABASE_SERVICE_KEY=your_service_key
 2. **Thin Relay Pattern**: VG is purely a WebSocket bridge with minimal processing
 3. **Production Verified**: ElevenLabs connection tested and receiving live events
 
+## Task Delegation Strategy for VG Integration
+
+When integrating the Voice Gateway with existing Remix+Express applications, Claude can use parallel sub-tasks for optimal configuration discovery and testing. This approach is particularly useful for:
+
+### Integration Planning Phase
+- **Parallel Analysis**: Delegate sub-tasks to simultaneously analyze different aspects of the target application (routing, middleware, WebSocket handling)
+- **Configuration Discovery**: Use sub-tasks to explore multiple configuration approaches without blocking main integration work
+- **Compatibility Testing**: Run isolated tests in sub-tasks to verify VG compatibility with existing infrastructure
+
+### Executive Decision Framework
+1. **Critical Path Tasks**: Execute directly for full control over VG core functionality
+2. **Exploration Tasks**: Delegate to sub-tasks for parallel discovery of integration points
+3. **Failed Sub-tasks**: Analyze output to determine if direct execution or refined delegation is needed
+
+### VG Integration Considerations
+- The VG requires careful WebSocket path management to avoid conflicts with existing routes
+- Express middleware order is crucial - VG WebSocket upgrade must happen before body parsers
+- Consider using sub-tasks to test different middleware configurations in isolation
+- Session management integration may require exploring multiple approaches simultaneously
+
+This delegation capability ensures thorough exploration of integration options while maintaining focus on core VG functionality.
+
 ## Important Files
 
 - `server.js` - Main Voice Gateway implementation
